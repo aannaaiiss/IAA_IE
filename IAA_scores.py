@@ -27,7 +27,7 @@ def format_data(raw_lines):
             data.append([])
             i+=1
         else :
-            data[i].append(tuple(line.lower().split("\t")))
+            data[i].append(tuple(line.lower().split(" <TAB> ")))
     return sentences, data
 
 def calculate_cohens_kappa(annotations1, annotations2):

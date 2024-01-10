@@ -27,7 +27,7 @@ def format_data(raw_lines):
             data.append([])
             i+=1
         else :
-            data[i].append(tuple(line.lower().split(" <TAB> ")))
+            data[i].append(tuple(line.lower().split(" <tab> ")))
     return sentences, data
 
 def calculate_cohens_kappa(annotations1, annotations2):
@@ -72,12 +72,13 @@ def get_cohen_kappa_df(filename_annotations1,filename_annotations2):
             [triplet[i] for triplet in  whole_annotations2])
                         ]
         sentences1 += [triplet_el]
-        
-    kappa_scores += [calculate_cohens_kappa(
-            [triplet[2] for triplet in  whole_annotations1 if len(triplet)>2 ], 
-            [triplet[2] for triplet in  whole_annotations2 if len(triplet)>2])
-                        ]
-    sentences1 += ["arg2"]
+    
+    for i,triplet_el in enumerate(["arg2","arg3","arg4","arg5"]) :
+        kappa_scores += [calculate_cohens_kappa(
+                [triplet[i+2] for triplet in  whole_annotations1 if len(triplet)>(i+2)], 
+                [triplet[i+2] for triplet in  whole_annotations2 if len(triplet)>(i+2)])
+                            ]
+        sentences1 += [triplet_el]
     
     df = pd.DataFrame({"sentence":sentences1,"Cohen's Kappa score":kappa_scores})
     

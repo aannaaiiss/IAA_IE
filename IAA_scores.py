@@ -27,7 +27,9 @@ def format_data(raw_lines):
             data.append([])
             i+=1
         else :
-            data[i].append(tuple(line.lower().split(" <tab> ")))
+            triplet = line.lower().split(" <tab> ")
+            triplet = tuple([element.strip() for element in triplet])
+            data[i].append(triplet)
     return sentences, data
 
 def calculate_cohens_kappa(annotations1, annotations2):
@@ -48,7 +50,11 @@ def get_cohen_kappa_df(filename_annotations1,filename_annotations2):
         -all of the sentences as a whole
         -arguments 1
         -relations
-        -arguments 2"""
+        -arguments 2
+        and if there are any :
+        -arguments 3
+        -arguments 4
+        -arguments 5"""
     
     sentences1,annotations1 = format_data(extract_annotations(filename_annotations1))
     sentences2,annotations2 = format_data(extract_annotations(filename_annotations2))

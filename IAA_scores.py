@@ -172,16 +172,14 @@ def count_agreement_pourcentage(annotations1,annotations2):
         total_count += max_count
 
     return total_agreed_count/total_count
+
 ######################################################################################################
     
 sentences,annotations1 = format_data(extract_annotations(path+filename_annotations1))
 sentences,annotations2 = format_data(extract_annotations(path+filename_annotations2))
 
 df = get_cohen_kappa_df(annotations1,annotations2,sentences)
-df1 = df.sort_values(by='sentence', ascending=False)
-
-df1['Agreement pourcentage'] = [count_agreement_pourcentage(annotations1,annotations2)] + [None] * (len(df1) - 1)
-
-print(df1)
-#df.to_csv(f"{filename_annotations1}_{filename_annotations2}_kappa_scores.csv")
+df = df.sort_values(by='sentence', ascending=False)
+df['Agreement pourcentage'] = [count_agreement_pourcentage(annotations1,annotations2)] + [None] * (len(df) - 1)
+df.to_csv(f"{filename_annotations1}_{filename_annotations2}_kappa_scores.csv")
 

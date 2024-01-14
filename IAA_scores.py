@@ -1,18 +1,23 @@
 from sklearn.metrics import cohen_kappa_score
 import pandas as pd
 from collections import defaultdict
+from itertools import combinations
 
 ######################################################################################################
-path = '../../'
-filename_annotations1 = "BEKOLO_annotations_1-10.txt"
-filename_annotations2 = "BEKOLO_annotations_1-10.2.txt"
+path = '../../annotations/'
+annotators = ["anais","blandine","mathilde"]
+first_annotations = "1-10_annotations"
+complete_annotations = "1-40_annotations"
+######################################################################################################
+'''Modify here'''
+save_df = False
 ######################################################################################################
 
 #1 : EXTRACT DATA
 def extract_annotations(file_path):
-    '''Returns a list of lines contained in the file'''
-    
-    with open(file_path,"r") as f: annotations = f.readlines()
+    '''Returns a list of lines contained in the file'''  
+      
+    with open(file_path,"r",encoding="UTF-8") as f: annotations = f.readlines()
     return [annotation.strip() for annotation in annotations]
 
 def format_data(raw_lines):
@@ -66,9 +71,12 @@ def get_cohen_kappa_df(annotations1,annotations2,sentences):
     #2 Calculate Cohen's Kappa scores for the whole set of sentences
     whole_annotations1 =  [triplet for sentence in annotations1 for triplet in sentence]
     whole_annotations2 = [triplet for sentence in annotations2 for triplet in sentence]
-   
+ 
     kappa_scores += [calculate_cohens_kappa(whole_annotations1,whole_annotations2)]
     sentences += ["whole data"]
+    
+    for triplet in whole_annotations2:
+        if len(triplet)<2:print(triplet)
     
      #3 Calculate Cohen's Kappa scores for each element of the triplet
     for i,triplet_el in enumerate(["arg1","relation"]) :
@@ -140,20 +148,30 @@ def count_classification(sentence_classif):
 
 def count_agreements(classif1,classif2):
     """Given the classification count for a sentence for both annotators, return the number of agreements and the number of possible tokens"""
-    total_agreed_count = 0
-    total_count_classif1 = 0
-    total_count_classif2 = 0
+    common_elements = set(classif1.keys()) & set(classif2.keys())
 
-    all_keys = set(classif1.keys()) | set(classif2.keys())
+    total_agreed_count = sum(
+        min(classif1[element].get(position, 0), classif2[element].get(position, 0))
+        for element in common_elements
+        for position in set(classif1.get(element, {}).keys()) & set(classif2.get(element, {}).keys())
+    )
 
-    for key in all_keys:
-        total_count_classif1 += sum(classif1[key].values()) if key in classif1 else 0
-        total_count_classif2 += sum(classif2[key].values()) if key in classif2 else 0
+    total_count = sum(
+        max(classif1[element].get(position, 0), classif2[element].get(position, 0))
+        for element in common_elements
+        for position in set(classif1.get(element, {}).keys()) | set(classif2.get(element, {}).keys())
+    )
 
-        for subkey in set(classif1[key].keys()) & set(classif2[key].keys()) if key in classif1 and key in classif2 else set():
-            total_agreed_count += min(classif1[key][subkey], classif2[key][subkey])
-            
-    return total_agreed_count, max(total_count_classif1, total_count_classif2) 
+    total_count += sum(
+        sum(classif1.get(element, {}).values())
+        for element in set(classif1.keys()) - common_elements
+    )
+
+    total_count += sum(
+        sum(classif2.get(element, {}).values())
+        for element in set(classif2.keys()) - common_elements
+    )
+    return total_agreed_count, total_count
 
 def count_agreement_pourcentage(annotations1,annotations2):
     """Return the pourcentage of agreement"""
@@ -173,13 +191,42 @@ def count_agreement_pourcentage(annotations1,annotations2):
 
     return total_agreed_count/total_count
 
-######################################################################################################
-    
-sentences,annotations1 = format_data(extract_annotations(path+filename_annotations1))
-sentences,annotations2 = format_data(extract_annotations(path+filename_annotations2))
+def compute_IAA(filename1,filename2,path,save_df=False):
+    sentences,annotations1 = format_data(extract_annotations(path+filename1))
+    sentences,annotations2 = format_data(extract_annotations(path+filename2))
+    df = get_cohen_kappa_df(annotations1,annotations2,sentences)
+    df = df.sort_values(by='sentence', ascending=False)
+    df['Agreement pourcentage'] = [count_agreement_pourcentage(annotations1,annotations2)] + [None] * (len(df) - 1)
+    if save_df : df.to_csv(f"../../IAA_scores/{filename1}_{filename2}_IAA_scores.csv")
+    return df
 
-df = get_cohen_kappa_df(annotations1,annotations2,sentences)
-df = df.sort_values(by='sentence', ascending=False)
-df['Agreement pourcentage'] = [count_agreement_pourcentage(annotations1,annotations2)] + [None] * (len(df) - 1)
-df.to_csv(f"{filename_annotations1}_{filename_annotations2}_kappa_scores.csv")
+######################################################################################################
+couples =  list(combinations(annotators, 2))
+
+#IAA between first and second versions
+for annotator in annotators :
+    print(f"IAA between first and second versions : {annotator}")
+    print(compute_IAA(f"{first_annotations}_{annotator}.txt",f"{first_annotations}_v2_{annotator}.txt",path,save_df=save_df).iloc[0])
+    print()
+
+#IAA between first versions
+for annotator1,annotator2 in couples :
+    print(f"IAA between first versions : {annotator1} and {annotator2}")
+    print(compute_IAA(f"{first_annotations}_{annotator1}.txt",f"{first_annotations}_{annotator2}.txt",path,save_df=save_df).iloc[0])
+    print()
+
+#IAA on the complete corpus
+for annotator1,annotator2 in couples :
+    print(f"IAA on the complete corpus : {annotator1} and {annotator2}")
+    print(compute_IAA(f"{complete_annotations}_{annotator1}.txt",f"{complete_annotations}_{annotator2}.txt",path,save_df=save_df).iloc[0])
+    print()
+    
+#IAA between complete corpus and adjucated version
+for annotator in annotators :
+    print(f"IAA between complete corpus and adjucated version : {annotator}")
+    print(compute_IAA(f"{complete_annotations}_{annotator}.txt",f"{complete_annotations}_adjucated.txt",path,save_df=save_df).iloc[0])
+    print()
+
+
+
 

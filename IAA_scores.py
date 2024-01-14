@@ -72,7 +72,7 @@ def get_cohen_kappa_df(annotations1,annotations2,sentences):
     whole_annotations1 =  [triplet for sentence in annotations1 for triplet in sentence]
     whole_annotations2 = [triplet for sentence in annotations2 for triplet in sentence]
  
-    kappa_scores += [calculate_cohens_kappa(whole_annotations1,whole_annotations2)]
+    kappa_scores += [round(calculate_cohens_kappa(whole_annotations1,whole_annotations2),2)]
     sentences += ["whole data"]
     
     for triplet in whole_annotations2:
@@ -189,7 +189,7 @@ def count_agreement_pourcentage(annotations1,annotations2):
         total_agreed_count +=agreed_count
         total_count += max_count
 
-    return total_agreed_count/total_count
+    return round(total_agreed_count/total_count,2)
 
 def compute_IAA(filename1,filename2,path,save_df=False):
     sentences,annotations1 = format_data(extract_annotations(path+filename1))
